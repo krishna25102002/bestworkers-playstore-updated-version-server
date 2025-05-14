@@ -3,10 +3,11 @@ const User = require('../models/User');
 
 exports.addProfession = async (req, res) => {
   console.log("Hiii", req.body);
+  console.log("Authenticated user (from token):", req.user ? req.user.id : "No user in req.user");
 
   try {
     const {
-      userId,
+      // userId is no longer taken from req.body for security
       name,
       email,
       mobileNo,
@@ -16,6 +17,7 @@ exports.addProfession = async (req, res) => {
       city,
       serviceCategory,
       serviceName,
+      designation,
       experience,
       servicePrice,
       priceUnit,
@@ -23,9 +25,13 @@ exports.addProfession = async (req, res) => {
       professionDescription
     } = req.body;
 
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ success: false, error: 'User not authenticated to add profession.' });
+    }
+
     // Create new profession
     const profession = await Profession.create({
-      user: userId,
+      user: req.user.id, // Use the ID from the authenticated user
       name,
       email,
       mobileNo,
@@ -35,6 +41,7 @@ exports.addProfession = async (req, res) => {
       city,
       serviceCategory,
       serviceName,
+      designation,
       experience,
       servicePrice: Number(servicePrice),
       priceUnit,
@@ -43,7 +50,7 @@ exports.addProfession = async (req, res) => {
     });
 
     // Update user's isProfession flag to true
-    await User.findByIdAndUpdate(userId, { isProfession: true });
+    await User.findByIdAndUpdate(req.user.id, { isProfession: true });
 
     res.status(201).json({ success: true, data: profession });
 

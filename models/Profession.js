@@ -38,6 +38,9 @@ const ProfessionSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please add a service name']
   },
+  designation: {
+   type: String
+  },
   experience: {
     type: String,
     required: [true, 'Please add experience level']
