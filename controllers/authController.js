@@ -235,15 +235,40 @@ exports.getMe = async (req, res, next) => {
         return res.status(401).json({ success: false, message: 'Not authorized, token failed or user ID missing' });
     }
     
-    const user = await User.findById(req.user.id).select('-pin'); // Exclude PIN
+    const baseUser = await User.findById(req.user.id).select('-pin').lean(); // Use .lean() for a plain JS object
 
-    if (!user) {
+    if (!baseUser) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    let profileData = { ...baseUser }; // Start with base user data
+
+    if (baseUser.isProfession) {
+      const Professional = require('../models/Profession'); // Adjust path if needed
+      const professionalProfile = await Professional.findOne({ user: baseUser._id }).lean();
+      
+      if (professionalProfile) {
+        // Merge professional details. Fields in professionalProfile will overwrite those in baseUser if names conflict.
+        profileData = { ...profileData, ...professionalProfile };
+        
+        // Ensure the main '_id' is from the User model for consistency.
+        profileData._id = baseUser._id; 
+
+        // Clean up the 'user' field from professionalProfile if it's just a reference
+        if (profileData.user && typeof profileData.user === 'object' && profileData.user._id) {
+           // If user is populated, keep it, otherwise if it's just an ObjectId string, it might be redundant.
+           // For simplicity, if it's the same as baseUser._id, we can remove it from the top level of profileData.
+           if (profileData.user._id && profileData.user._id.toString() === baseUser._id.toString()) delete profileData.user;
+           else if (profileData.user.toString() === baseUser._id.toString()) delete profileData.user;
+        }
+      }
+    }
+
+
     res.status(200).json({
       success: true,
-      data: user,
+      // data: user,
+      data: profileData, // Send the merged data
     });
   } catch (error) {
     console.error("Error in getMe:", error);
