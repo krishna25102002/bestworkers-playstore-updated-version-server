@@ -89,3 +89,64 @@ exports.getProfessionalsByService = async (req, res) => {
     });
   }
 };
+
+exports.updateUserProfessionalProfile = async (req, res) => {
+  try {
+    const userId = req.user.id; // From 'protect' auth middleware
+    const {
+      // Destructure all fields from req.body that can be updated
+      // Note: name, email, and primary mobileNo are part of the User model
+      // and should be updated via a different endpoint (e.g., /api/users/update)
+      // if they are intended to change the core user details.
+      // Here, we assume these might be specific to the professional listing if your Professional model has them.
+      name, // If Professional model has its own name field
+      email, // If Professional model has its own email field
+      mobileNo, // If Professional model has its own mobileNo field
+      secondaryMobileNo,
+      state,
+      district,
+      city,
+      serviceCategory,
+      serviceName,
+      designation,
+      experience,
+      servicePrice,
+      priceUnit,
+      needSupport,
+      professionDescription,
+    } = req.body;
+
+    let professionalProfile = await Profession.findOne({ user: userId });
+
+    if (!professionalProfile) {
+      // If the profile doesn't exist, you might want to return an error
+      // or create one if your logic allows (upsert-like behavior).
+      // For an update, it's common to expect the profile to exist.
+      return res.status(404).json({ success: false, error: 'Professional profile not found. Please add one first.' });
+    }
+
+    // Update fields that are part of the Professional model
+    if (name !== undefined) professionalProfile.name = name; // Only if Professional model has 'name'
+    if (email !== undefined) professionalProfile.email = email; // Only if Professional model has 'email'
+    if (mobileNo !== undefined) professionalProfile.mobileNo = mobileNo; // Only if Professional model has 'mobileNo'
+    if (secondaryMobileNo !== undefined) professionalProfile.secondaryMobileNo = secondaryMobileNo;
+    if (state) professionalProfile.state = state;
+    if (district) professionalProfile.district = district;
+    if (city) professionalProfile.city = city;
+    if (serviceCategory) professionalProfile.serviceCategory = serviceCategory;
+    if (serviceName) professionalProfile.serviceName = serviceName;
+    professionalProfile.designation = designation; // Can be empty
+    if (experience) professionalProfile.experience = experience;
+    if (servicePrice !== undefined) professionalProfile.servicePrice = Number(servicePrice);
+    if (priceUnit) professionalProfile.priceUnit = priceUnit;
+    if (needSupport !== undefined) professionalProfile.needSupport = needSupport;
+    if (professionDescription !== undefined) professionalProfile.professionDescription = professionDescription;
+
+    await professionalProfile.save();
+
+    res.json({ success: true, message: 'Professional profile updated successfully', data: professionalProfile });
+  } catch (err) {
+    console.error('Error updating professional profile:', err.message);
+    res.status(500).json({ success: false, error: 'Server error while updating profile', details: err.message });
+  }
+};
