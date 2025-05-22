@@ -6,7 +6,7 @@ exports.addProfession = async (req, res) => {
   console.log("Authenticated user (from token):", req.user ? req.user.id : "No user in req.user");
 
   try {
-    const {
+    const { 
       // userId is no longer taken from req.body for security
       name,
       email,
